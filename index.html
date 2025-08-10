@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI-ML Roadmap Tracker — Interactive</title>
+  <style>
+    :root{
+      --bg:#071028; --card:#081427; --muted:#98a8bf; --accent:#60a5fa; --ok:#22c55e; --warn:#f59e0b;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#06111f 0%, #081525 100%); color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+    }
+    .wrap{max-width:1100px;margin:28px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    select,input[type=search]{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    button{padding:8px 12px;border-radius:10px;border:0;background:var(--accent);color:#042433;cursor:pointer}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(255,255,255,0.04)}
+    .card{background:linear-gradient(180deg,var(--glass), rgba(255,255,255,0.01));border-radius:var(--radius);padding:12px;margin-top:16px;border:1px solid rgba(255,255,255,0.03)}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead th{font-size:12px;color:var(--muted);text-align:left;padding:10px 8px;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    tbody td{padding:10px 8px;border-bottom:1px dashed rgba(255,255,255,0.03);vertical-align:top}
+    .badge{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700}
+    .status-0{background:rgba(255,255,255,0.02);color:var(--muted)}
+    .status-1{background:var(--warn);color:#0d1c12}
+    .status-2{background:var(--ok);color:#02210b}
+    .row-actions{display:flex;gap:6px}
+    .small{font-size:12px;padding:6px 8px;border-radius:8px;border:0}
+    .small.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .topic-row{cursor:pointer}
+    .details{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));padding:12px 16px;border-radius:10px;margin:10px 0;color:#dbe8ff}
+    .detail-grid{display:grid;grid-template-columns:1fr 320px;gap:12px}
+    .detail-grid h4{margin:0 0 6px 0}
+    .links a{display:inline-block;margin-right:8px;margin-bottom:6px;color:var(--accent)}
+    .phase-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(96,165,250,0.08);color:var(--accent);font-weight:700}
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
+    @media (max-width:920px){
+      .detail-grid{grid-template-columns:1fr}
+      .controls{justify-content:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>AI-ML 2-Year Roadmap Tracker</h1>
+        <p class="lead">Click a topic to read a point-wise explanation with quick learning links. Progress stored locally.</p>
+      </div>
+      <div class="controls">
+        <select id="phaseFilter"><option value="all">All Phases</option></select>
+        <select id="monthFilter"><option value="all">All Months</option></select>
+        <input id="search" type="search" placeholder="Search topic or phase..." />
+        <button id="clear">Clear</button>
+        <button id="export">Export CSV</button>
+        <button id="importBtn" class="ghost">Import CSV</button>
+        <input id="importFile" type="file" accept="text/csv" style="display:none" />
+      </div>
+    </header>
+
+    <div class="card" id="tableCard" role="region" aria-label="roadmap table">
+      <table id="roadmapTable" aria-describedby="tableDesc">
+        <thead>
+          <tr>
+            <th style="width:34px">#</th>
+            <th style="width:60px">Year</th>
+            <th style="width:60px">Month</th>
+            <th>Phase</th>
+            <th>Topic / Task</th>
+            <th style="width:140px">Status</th>
+            <th style="width:150px">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="tableDesc" style="display:none">Interactive roadmap table</p>
+    </div>
+
+    <footer>
+      Tip: Use ◀ / ▶ to change status (Not Started → In Progress → Completed). Press <strong>Shift + S</strong> to reset all (confirm).
+    </footer>
+  </div>
+
+<script>
+/* -----------------------------
+  ROADMAP data
+  Each item: { year, month, phase, task, status, details, resources: [ {title,url} ] }
+  - Status: 0 = Not Started, 1 = In Progress, 2 = Completed
+  - details: HTML-safe string with pointwise explanation (we use \n for list lines)
+------------------------------*/
+const ROADMAP = [
+  // Phase 1 - Fundamentals (Months 1-3)
+  {year:1, month:1, phase:"Phase 1: Fundamentals", task:"Python basics – syntax, variables, loops, conditionals", status:0,
+   details: [
+     "Syntax: indentation defines blocks; no semicolons needed.",
+     "Variables: dynamic typing, assignment with =. Naming conventions (snake_case).",
+     "Data types: int, float, str, bool, list, tuple, dict, set.",
+     "Loops: for (iterate over sequences) and while (condition-based loops).",
+     "Conditionals: if, elif, else with boolean expressions.",
+     "Small examples: show a for-loop printing numbers and an if/else check."
+   ],
+   resources:[
+     {title:"Python Official Tutorial", url:"https://docs.python.org/3/tutorial/"},
+     {title:"YouTube: Python Tutorial (freeCodeCamp)", url:"https://www.youtube.com/results?search_query=python+tutorial+for+beginners+freecodecamp"}
+   ]},
+
+  {year:1, month:1, phase:"Phase 1: Fundamentals", task:"Functions, modules, error handling, file handling", status:0,
+   details:[
+     "Functions: def name(params): return ... — modularize code.",
+     "Modules: import stdlib modules and third-party packages.",
+     "Error handling: try / except / finally for safe code.",
+     "File I/O: open(), read(), write(), using 'with' context manager.",
+     "Practice: write functions for small tasks and read/write CSV files."
+   ],
+   resources:[
+     {title:"Functions & Modules", url:"https://docs.python.org/3/tutorial/modules.html"},
+     {title:"YouTube: Python File I/O & Exceptions", url:"https://www.youtube.com/results?search_query=python+file+io+exceptions+tutorial"}
+   ]},
+
+  {year:1, month:2, phase:"Phase 1: Fundamentals", task:"Object-Oriented Programming in Python", status:0,
+   details:[
+     "OOP basics: classes, objects, methods, attributes.",
+     "Constructors (__init__), inheritance, polymorphism.",
+     "Encapsulation with private members (_ or __ prefix).",
+     "When to use: model real-world entities and organize large projects."
+   ],
+   resources:[
+     {title:"OOP in Python (official)", url:"https://docs.python.org/3/tutorial/classes.html"},
+     {title:"YouTube: Python OOP Tutorial", url:"https://www.youtube.com/results?search_query=python+oop+tutorial"}
+   ]},
+
+  {year:1, month:2, phase:"Phase 1: Fundamentals", task:"Linear algebra – vectors, matrices, operations (NumPy)", status:0,
+   details:[
+     "Vectors and matrices as arrays; matrix multiplication and transpose.",
+     "Dot product, norms, eigenvalues/eigenvectors (basic intuition).",
+     "NumPy: ndarray, broadcasting, vectorized operations.",
+     "Practice: implement linear combinations and simple matrix ops in NumPy."
+   ],
+   resources:[
+     {title:"NumPy Quickstart", url:"https://numpy.org/doc/stable/user/quickstart.html"},
+     {title:"3Blue1Brown Linear Algebra (visual)", url:"https://www.youtube.com/watch?v=kjBOesZCoqc"}
+   ]},
+
+  {year:1, month:3, phase:"Phase 1: Fundamentals", task:"Probability basics – conditional probability, Bayes’ theorem", status:0,
+   details:[
+     "Probability intuition: events, sample spaces, independence.",
+     "Conditional probability P(A|B) and chain rule.",
+     "Bayes' theorem for updating beliefs given evidence.",
+     "Practice: small probability problems and Naive Bayes intuition."
+   ],
+   resources:[
+     {title:"Khan Academy Probability", url:"https://www.khanacademy.org/math/statistics-probability/probability-library"},
+     {title:"YouTube: Bayes Theorem Intuition", url:"https://www.youtube.com/results?search_query=bayes+theorem+intuitive"}
+   ]},
+
+  {year:1, month:3, phase:"Phase 1: Fundamentals", task:"Statistics – mean, variance, distributions", status:0,
+   details:[
+     "Descriptive stats: mean, median, mode, variance, standard deviation.",
+     "Distributions: normal, uniform, binomial — when to expect them.",
+     "Sampling, central limit theorem basics.",
+     "Practice: compute stats using pandas and visualize histograms."
+   ],
+   resources:[
+     {title:"Intro to Statistics (Khan Academy)", url:"https://www.khanacademy.org/math/statistics-probability"},
+     {title:"Pandas Tutorial", url:"https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html"}
+   ]},
+
+  {year:1, month:3, phase:"Phase 1: Fundamentals", task:"Calculus basics – derivatives, gradients", status:0,
+   details:[
+     "Derivatives describe rate of change; gradients point to steepest ascent.",
+     "Chain rule for composed functions (important for backpropagation).",
+     "Partial derivatives for multivariate functions.",
+     "Practice: simple derivative examples and gradient descent intuition."
+   ],
+   resources:[
+     {title:"Khan Academy Calculus", url:"https://www.khanacademy.org/math/calculus-1"},
+     {title:"YouTube: Gradient Descent Intuition", url:"https://www.youtube.com/results?search_query=gradient+descent+intuitive"}
+   ]},
+
+  {year:1, month:3, phase:"Phase 1: Fundamentals", task:"Tools setup – Jupyter, Git/GitHub, virtual envs", status:0,
+   details:[
+     "Jupyter notebooks for experiments and visualization.",
+     "Git for version control: commit, branch, push, pull, PR workflow.",
+     "Virtual environments: venv or conda to manage dependencies.",
+     "Practice: push a small project to GitHub and create a notebook."
+   ],
+   resources:[
+     {title:"Jupyter Docs", url:"https://jupyter.org/documentation"},
+     {title:"Git Handbook", url:"https://guides.github.com/introduction/git-handbook/"}
+   ]},
+
+  // Phase 2 - Core ML (Months 4-6)
+  {year:1, month:4, phase:"Phase 2: Core ML", task:"Data preprocessing & cleaning", status:0,
+   details:[
+     "Missing values: imputation strategies (mean, median, model-based).",
+     "Scaling: StandardScaler vs MinMaxScaler.",
+     "Categorical encoding: one-hot, label encoding, target encoding.",
+     "Feature selection & treatment of outliers."
+   ],
+   resources:[
+     {title:"Pandas Data Cleaning", url:"https://pandas.pydata.org/docs/getting_started/intro_tutorials/06_calculate_statistics.html"},
+     {title:"YouTube: Data Cleaning Tutorial", url:"https://www.youtube.com/results?search_query=data+cleaning+pandas+tutorial"}
+   ]},
+
+  {year:1, month:4, phase:"Phase 2: Core ML", task:"Linear regression, multiple regression", status:0,
+   details:[
+     "Linear model: hypothesis h(x)=w^T x + b and MSE loss.",
+     "Interpret coefficients, assumptions of linear regression.",
+     "Multicollinearity, regularization (Ridge/Lasso) basics.",
+     "Practice: fit on simple dataset with scikit-learn."
+   ],
+   resources:[
+     {title:"scikit-learn Linear Models", url:"https://scikit-learn.org/stable/modules/linear_model.html"},
+     {title:"YouTube: Linear Regression (statQuest)", url:"https://www.youtube.com/results?search_query=statquest+linear+regression"}
+   ]},
+
+  {year:1, month:5, phase:"Phase 2: Core ML", task:"Logistic regression & classification basics", status:0,
+   details:[
+     "Logistic regression uses sigmoid activation for binary classification.",
+     "Decision boundary intuition and log-loss (cross-entropy).",
+     "Multiclass strategies: one-vs-rest, softmax.",
+     "Practice: classify binary dataset using scikit-learn."
+   ],
+   resources:[
+     {title:"Logistic Regression (scikit-learn)", url:"https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression"},
+     {title:"YouTube: Logistic Regression Explained", url:"https://www.youtube.com/results?search_query=logistic+regression+statquest"}
+   ]},
+
+  {year:1, month:5, phase:"Phase 2: Core ML", task:"Decision trees, random forests", status:0,
+   details:[
+     "Decision tree splits based on impurity (Gini/Entropy).",
+     "Random forest: ensemble of trees reduces variance.",
+     "Hyperparameters: depth, n_estimators, min_samples_split.",
+     "Practice: train random forest and inspect feature importances."
+   ],
+   resources:[
+     {title:"Decision Trees (scikit-learn)", url:"https://scikit-learn.org/stable/modules/tree.html"},
+     {title:"YouTube: Random Forest Intuition", url:"https://www.youtube.com/results?search_query=random+forest+intuitive"}
+   ]},
+
+  {year:1, month:6, phase:"Phase 2: Core ML", task:"k-NN, Naïve Bayes", status:0,
+   details:[
+     "k-NN: distance-based lazy learner — scale data first.",
+     "Naïve Bayes: uses conditional independence assumption for speed.",
+     "When to use: k-NN for small datasets, NB for text classification.",
+     "Practice: implement spam classifier with Naive Bayes."
+   ],
+   resources:[
+     {title:"k-NN & Naïve Bayes (scikit-learn)", url:"https://scikit-learn.org/stable/supervised_learning.html"},
+     {title:"YouTube: Naive Bayes Tutorial", url:"https://www.youtube.com/results?search_query=naive+bayes+text+classification+tutorial"}
+   ]},
+
+  {year:1, month:6, phase:"Phase 2: Core ML", task:"Model evaluation metrics (accuracy, precision, recall, F1)", status:0,
+   details:[
+     "Accuracy vs precision/recall — choose by problem (imbalanced data).",
+     "Confusion matrix interpretation.",
+     "ROC-AUC for probabilistic classifiers.",
+     "Practice: compute metrics with scikit-learn and plot confusion matrix."
+   ],
+   resources:[
+     {title:"Model Evaluation (scikit-learn)", url:"https://scikit-learn.org/stable/modules/model_evaluation.html"},
+     {title:"YouTube: Precision Recall F1", url:"https://www.youtube.com/results?search_query=precision+recall+f1+score+explain"}
+   ]},
+
+  {year:1, month:6, phase:"Phase 2: Core ML", task:"Feature engineering, PCA", status:0,
+   details:[
+     "Create informative features using domain knowledge.",
+     "Dimensionality reduction: PCA for visualization & noise reduction.",
+     "Avoid data leakage: transform using train stats only.",
+     "Practice: apply PCA and visualize first two components."
+   ],
+   resources:[
+     {title:"Feature Engineering Guide", url:"https://www.kaggle.com/learn/feature-engineering"},
+     {title:"PCA (scikit-learn)", url:"https://scikit-learn.org/stable/modules/decomposition.html#pca"}
+   ]},
+
+  // Phase 3 - Deep Learning (Months 7-12)
+  {year:1, month:7, phase:"Phase 3: Deep Learning", task:"Perceptrons, activation functions, backpropagation", status:0,
+   details:[
+     "Perceptron: basic neuron model; activation functions introduce non-linearity.",
+     "Common activations: ReLU, Sigmoid, Tanh — pros/cons.",
+     "Backpropagation: compute gradients via chain rule to update weights.",
+     "Practice: build a small neural net from scratch (numpy) to see backprop."
+   ],
+   resources:[
+     {title:"Neural Networks (3Blue1Brown series)", url:"https://www.youtube.com/watch?v=aircAruvnKk"},
+     {title:"DeepLearning.AI Course (Andrew Ng)", url:"https://www.coursera.org/specializations/deep-learning"}
+   ]},
+
+  {year:1, month:7, phase:"Phase 3: Deep Learning", task:"Loss functions & optimizers (SGD, Adam)", status:0,
+   details:[
+     "Loss functions: MSE for regression, cross-entropy for classification.",
+     "Optimizers: SGD, Momentum, Adam — trade-offs in convergence.",
+     "Learning rate: crucial hyperparameter; use schedulers or warmups.",
+     "Practice: compare SGD vs Adam on a small dataset."
+   ],
+   resources:[
+     {title:"Optimizer Intuition", url:"https://www.youtube.com/results?search_query=sgd+adam+optimizer+intuitive"},
+     {title:"Loss Functions Guide", url:"https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html"}
+   ]},
+
+  {year:1, month:8, phase:"Phase 3: Deep Learning", task:"TensorFlow / Keras basics", status:0,
+   details:[
+     "Keras API: Sequential and Functional models to build NN architectures.",
+     "Training loop: model.compile(), model.fit(), callbacks.",
+     "Saving/Loading models, transfer learning APIs.",
+     "Practice: build a simple classifier on MNIST using Keras."
+   ],
+   resources:[
+     {title:"TensorFlow Keras Guide", url:"https://www.tensorflow.org/guide/keras"},
+     {title:"YouTube: TensorFlow 2.0 Tutorial", url:"https://www.youtube.com/results?search_query=tensorflow+keras+tutorial+2021"}
+   ]},
+
+  {year:1, month:8, phase:"Phase 3: Deep Learning", task:"CNN theory + basic image classification", status:0,
+   details:[
+     "Convolution: kernels, stride, padding; pooling layers reduce spatial size.",
+     "CNNs capture local features and hierarchy (edges → shapes → objects).",
+     "Common architectures: LeNet, AlexNet, VGG, ResNet ideas.",
+     "Practice: train a CNN on CIFAR-10 or simple dataset."
+   ],
+   resources:[
+     {title:"CS231n Convolutional Networks", url:"http://cs231n.stanford.edu/"},
+     {title:"YouTube: CNN Intuition", url:"https://www.youtube.com/results?search_query=convolutional+neural+network+intuitive"}
+   ]},
+
+  {year:1, month:9, phase:"Phase 3: Deep Learning", task:"Data augmentation, transfer learning", status:0,
+   details:[
+     "Augmentation: flips, crops, color jitter to increase dataset variety.",
+     "Transfer learning: use pretrained models and fine-tune on new tasks.",
+     "When to freeze layers vs fine-tune entire network.",
+     "Practice: fine-tune ResNet on your small dataset."
+   ],
+   resources:[
+     {title:"Transfer Learning Guide", url:"https://www.tensorflow.org/tutorials/images/transfer_learning"},
+     {title:"YouTube: Transfer Learning Tutorial", url:"https://www.youtube.com/results?search_query=transfer+learning+resnet+tutorial"}
+   ]},
+
+  {year:1, month:9, phase:"Phase 3: Deep Learning", task:"Advanced CNN architectures (ResNet, VGG)", status:0,
+   details:[
+     "ResNet: residual connections solve vanishing gradients for deep nets.",
+     "VGG: deep stacks of conv layers — simple but heavy.",
+     "Understand architecture diagrams and block composition.",
+     "Practice: inspect pretrained models and experiment with modifications."
+   ],
+   resources:[
+     {title:"ResNet Paper (summary)", url:"https://arxiv.org/abs/1512.03385"},
+     {title:"YouTube: ResNet Intuition", url:"https://www.youtube.com/results?search_query=resnet+intuitive+explanation"}
+   ]},
+
+  {year:1, month:10, phase:"Phase 3: Deep Learning", task:"RNN basics, vanishing/exploding gradient", status:0,
+   details:[
+     "RNNs process sequences step-by-step; hidden state carries information.",
+     "Vanishing/exploding gradient: long-term dependencies are hard for vanilla RNNs.",
+     "Solutions include LSTM/GRU and gradient clipping.",
+     "Practice: implement a simple RNN for sequence prediction."
+   ],
+   resources:[
+     {title:"RNN Tutorial", url:"https://www.tensorflow.org/guide/keras/rnn"},
+     {title:"YouTube: Vanishing Gradients", url:"https://www.youtube.com/results?search_query=vanishing+exploding+gradients+intuitive"}
+   ]},
+
+  {year:1, month:10, phase:"Phase 3: Deep Learning", task:"LSTMs, GRUs", status:0,
+   details:[
+     "LSTM: gating mechanisms (input, forget, output) retain long-term info.",
+     "GRU: simplified gating with comparable performance in many tasks.",
+     "When to use: sequence classification, language modeling, time series.",
+     "Practice: sentiment analysis with an LSTM on movie reviews."
+   ],
+   resources:[
+     {title:"LSTM Intuition", url:"https://colah.github.io/posts/2015-08-Understanding-LSTMs/"},
+     {title:"YouTube: LSTM explained", url:"https://www.youtube.com/results?search_query=LSTM+intuitive+explanation"}
+   ]},
+
+  {year:1, month:11, phase:"Phase 3: Deep Learning", task:"Word embeddings (Word2Vec, GloVe)", status:0,
+   details:[
+     "Embeddings map words to dense vectors capturing semantics.",
+     "Word2Vec uses skip-gram / CBOW; GloVe uses global co-occurrence stats.",
+     "Use pretrained embeddings to speed up NLP models.",
+     "Practice: visualize word vectors and nearest neighbors."
+   ],
+   resources:[
+     {title:"Word2Vec Tutorial", url:"https://radimrehurek.com/gensim/auto_examples/howtos/run_word2vec.html"},
+     {title:"YouTube: Word Embeddings", url:"https://www.youtube.com/results?search_query=word2vec+glove+introduction"}
+   ]},
+
+  {year:1, month:11, phase:"Phase 3: Deep Learning", task:"Sentiment analysis project", status:0,
+   details:[
+     "Pipeline: text preprocessing → tokenization → embeddings → model → eval.",
+     "Model choices: simple RNN/LSTM, CNN for text, or transformers for best results.",
+     "Evaluation: accuracy, confusion matrix, possibly F1 for imbalanced data.",
+     "Practice: build end-to-end sentiment classifier using IMDB dataset."
+   ],
+   resources:[
+     {title:"IMDB Sentiment dataset (Keras)", url:"https://keras.io/api/datasets/imdb/"},
+     {title:"YouTube: Sentiment Analysis Tutorial", url:"https://www.youtube.com/results?search_query=sentiment+analysis+tutorial+python"}
+   ]},
+
+  {year:1, month:12, phase:"Phase 3: Deep Learning", task:"Time-series forecasting", status:0,
+   details:[
+     "Problems: trend, seasonality, stationarity; check ACF/PACF plots.",
+     "Models: ARIMA classics, LSTM-based sequence models, Prophet for business use.",
+     "Evaluation measures: RMSE, MAE, MAPE.",
+     "Practice: forecast simple time-series (sales or weather) and evaluate."
+   ],
+   resources:[
+     {title:"Prophet Guide", url:"https://facebook.github.io/prophet/"},
+     {title:"YouTube: Time Series Forecasting Tutorial", url:"https://www.youtube.com/results?search_query=time+series+forecasting+tutorial+python"}
+   ]},
+
+  // Phase 4 - Specialization (Months 13-16)
+  {year:2, month:1, phase:"Phase 4: Specialization", task:"Choose specialization (NLP, CV, RL, Generative AI)", status:0,
+   details:[
+     "Pick 1–2 areas you enjoy and align with career goals.",
+     "NLP: text & language tasks. CV: images & video. RL: agents & environments. Generative AI: GANs/LLMs.",
+     "Plan projects and resources for chosen specialization."
+   ],
+   resources:[
+     {title:"Overview: Specialization Choices", url:"https://www.coursera.org/articles/what-is-machine-learning-specialization"}
+   ]},
+
+  {year:2, month:1, phase:"Phase 4: Specialization", task:"Advanced topic study & small project", status:0,
+   details:[
+     "Read papers and implement a small project in the specialization.",
+     "Focus on reproducibility and building a clean GitHub repo.",
+     "Document experiments and results."
+   ],
+   resources:[
+     {title:"ArXiv.org", url:"https://arxiv.org/"}
+   ]},
+
+  {year:2, month:2, phase:"Phase 4: Specialization", task:"Transformer basics (BERT, GPT)", status:0,
+   details:[
+     "Transformer: attention mechanism, self-attention, positional encoding.",
+     "BERT for encoding (masked LM) and GPT for autoregressive generation.",
+     "Practice: use Hugging Face transformers for fine-tuning."
+   ],
+   resources:[
+     {title:"Hugging Face Transformers", url:"https://huggingface.co/transformers/"},
+     {title:"Attention is All You Need (paper)", url:"https://arxiv.org/abs/1706.03762"}
+   ]},
+
+  {year:2, month:2, phase:"Phase 4: Specialization", task:"Specialization mid-size project", status:0,
+   details:[
+     "Build a mid-size project (e.g., chatbot, object detector, RL agent).",
+     "Use proper dataset split, logging of experiments, and a README.",
+     "Deploy a small demo or share notebook."
+   ],
+   resources:[
+     {title:"Project Ideas & Tutorials", url:"https://www.kaggle.com/learn/overview"}
+   ]},
+
+  {year:2, month:3, phase:"Phase 4: Specialization", task:"Deploy specialization project", status:0,
+   details:[
+     "Wrap model in web API (Flask / FastAPI) or Streamlit UI.",
+     "Containerize with Docker and optionally deploy to cloud.",
+     "Add basic monitoring and a README with usage instructions."
+   ],
+   resources:[
+     {title:"FastAPI Tutorial", url:"https://fastapi.tiangolo.com/"},
+     {title:"Streamlit Docs", url:"https://docs.streamlit.io/"}
+   ]},
+
+  {year:2, month:4, phase:"Phase 4: Specialization", task:"Final specialization project", status:0,
+   details:[
+     "Finish a polished capstone (readable code, tests, deployment).",
+     "Focus on a real-world problem and demonstrate results.",
+     "Prepare blog post / walkthrough for portfolio."
+   ],
+   resources:[
+     {title:"How to Write a Project Case Study", url:"https://towardsdatascience.com/how-to-write-a-data-science-case-study-7f993b2b1fb1"}
+   ]},
+
+  // Phase 5 - Deployment / MLOps / Career (Months 17-24)
+  {year:2, month:5, phase:"Phase 5: Deployment", task:"Flask / FastAPI for ML deployment", status:0,
+   details:[
+     "Build a simple REST API that accepts input and returns model prediction.",
+     "Handle input validation, serialization, and model loading efficiently.",
+     "Practice: deploy a model endpoint and test with Postman or curl."
+   ],
+   resources:[
+     {title:"Flask Quickstart", url:"https://flask.palletsprojects.com/en/latest/"},
+     {title:"FastAPI for ML", url:"https://fastapi.tiangolo.com/tutorial/first-steps/"}
+   ]},
+
+  {year:2, month:5, phase:"Phase 5: Deployment", task:"Deploy to AWS / GCP / Streamlit", status:0,
+   details:[
+     "Choose simple cloud: Heroku/Render/Streamlit Cloud for demos, AWS/GCP for production.",
+     "Understand basics of hosting, domain, and SSL.",
+     "Practice: deploy a small app and share link publicly."
+   ],
+   resources:[
+     {title:"Streamlit Cloud", url:"https://streamlit.io/cloud"},
+     {title:"Google Cloud ML Engine", url:"https://cloud.google.com/ai-platform"}
+   ]},
+
+  {year:2, month:6, phase:"Phase 5: Deployment", task:"Capstone Project 1 – end-to-end ML system", status:0,
+   details:[
+     "End-to-end: data ingestion → training pipeline → model → deployment.",
+     "Focus on reproducibility, versioning, and simple monitoring.",
+     "Deliverable: working demo + code repo + explanation."
+   ],
+   resources:[
+     {title:"MLOps Overview", url:"https://ml-ops.org/"}
+   ]},
+
+  {year:2, month:7, phase:"Phase 5: Deployment", task:"Capstone Project 2 – specialization project", status:0,
+   details:[
+     "Second polished project in your specialization to show depth.",
+     "Include documentation, test cases, and deployment link.",
+     "Make a concise demo video or README walkthrough."
+   ],
+   resources:[
+     {title:"Presentation tips for projects", url:"https://www.coursera.org/articles/presentation-tips"}
+   ]},
+
+  {year:2, month:8, phase:"Phase 5: MLOps", task:"MLOps basics – pipelines, monitoring", status:0,
+   details:[
+     "Pipelines for training and deployment (Airflow, Kubeflow, GitHub Actions).",
+     "Model monitoring: drift detection, performance tracking.",
+     "Practice: create a simple pipeline to retrain a model on schedule."
+   ],
+   resources:[
+     {title:"Kubeflow", url:"https://www.kubeflow.org/"},
+     {title:"Airflow", url:"https://airflow.apache.org/"}
+   ]},
+
+  {year:2, month:9, phase:"Phase 5: Career Prep", task:"GitHub portfolio optimization", status:0,
+   details:[
+     "Organize repos: README, tutorials, datasets (or pointers), license.",
+     "Add clear instructions for reproducing results and deploying demos.",
+     "Use GitHub Pages or a simple portfolio site to showcase projects."
+   ],
+   resources:[
+     {title:"Creating a great README", url:"https://www.freecodecamp.org/news/how-to-write-a-good-readme/"}
+   ]},
+
+  {year:2, month:9, phase:"Phase 5: Career Prep", task:"Resume & LinkedIn optimization", status:0,
+   details:[
+     "Highlight projects, technologies, and outcomes (metrics).",
+     "Keep LinkedIn updated and add project links / demo videos.",
+     "Prepare narrative for interviews: problem, approach, your role, impact."
+   ],
+   resources:[
+     {title:"How to create ML resume", url:"https://www.kaggle.com/getting-started/106449"}
+   ]},
+
+  {year:2, month:10, phase:"Phase 5: Career Prep", task:"Interview preparation – coding + ML theory", status:0,
+   details:[
+     "Practice coding problems (arrays, graphs) and system design basics.",
+     "Revise ML fundamentals: algorithms, metrics, trade-offs, common pitfalls.",
+     "Mock interviews and whiteboarding practice (if possible)."
+   ],
+   resources:[
+     {title:"LeetCode", url:"https://leetcode.com/"},
+     {title:"ML Interview Guide", url:"https://www.interviewbit.com/machine-learning-interview-questions/"}
+   ]}
+];
+
+/* -----------------------------
+  App state & persistence
+------------------------------*/
+const STORAGE_KEY = 'ai_ml_roadmap_v2';
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+if(!state){
+  state = ROADMAP.map(r => ({...r})); // deep-ish copy
+  persist();
+}
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* -----------------------------
+  DOM references
+------------------------------*/
+const tbody = document.querySelector('#roadmapTable tbody');
+const phaseFilter = document.getElementById('phaseFilter');
+const monthFilter = document.getElementById('monthFilter');
+const searchInput = document.getElementById('search');
+const clearBtn = document.getElementById('clear');
+const exportBtn = document.getElementById('export');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+
+/* -----------------------------
+  Helpers: render table and details
+------------------------------*/
+function unique(array){ return [...new Set(array)]; }
+
+function buildFilters(){
+  const phases = unique(state.map(s => s.phase));
+  phases.forEach(p => {
+    if(![...phaseFilter.options].some(o => o.value === p)){
+      const opt = document.createElement('option'); opt.value = p; opt.textContent = p; phaseFilter.appendChild(opt);
+    }
+  });
+  // months 1..12
+  if(monthFilter.options.length === 1){
+    for(let m=1;m<=12;m++){
+      const opt = document.createElement('option'); opt.value = m; opt.textContent = 'Month '+m; monthFilter.appendChild(opt);
+    }
+  }
+}
+
+function render(){
+  tbody.innerHTML = '';
+  buildFilters();
+  const q = (searchInput.value || '').toLowerCase().trim();
+  const fp = phaseFilter.value;
+  const fm = monthFilter.value;
+
+  state.forEach((row, idx) => {
+    if(fp !== 'all' && row.phase !== fp) return;
+    if(fm !== 'all' && String(row.month) !== String(fm)) return;
+    if(q){
+      const hay = (row.task + ' ' + row.phase + ' ' + (row.details && row.details.join(' '))).toLowerCase();
+      if(!hay.includes(q)) return;
+    }
+
+    // topic row
+    const tr = document.createElement('tr');
+    tr.className = 'topic-row';
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td>${row.year}</td>
+      <td>${row.month}</td>
+      <td><span class="phase-pill">${row.phase}</span></td>
+      <td><strong>${escapeHtml(row.task)}</strong></td>
+      <td><span class="badge status-${row.status}">${statusLabel(row.status)}</span></td>
+      <td class="row-actions">
+        <button class="small" data-idx="${idx}" data-action="prev">◀</button>
+        <button class="small" data-idx="${idx}" data-action="next">▶</button>
+        <button class="small ghost" data-idx="${idx}" data-action="reset">Reset</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // details row (collapsed by default)
+    const detTr = document.createElement('tr');
+    const detTd = document.createElement('td');
+    detTd.colSpan = 7;
+    detTd.style.paddingBottom = '18px';
+    const detailsHtml = buildDetailsHtml(row, idx);
+    detTd.innerHTML = detailsHtml;
+    detTr.appendChild(detTd);
+    detTr.style.display = 'none'; // collapse
+    tbody.appendChild(detTr);
+
+    // toggle on click of topic-row's description cell (except buttons)
+    tr.addEventListener('click', (e) => {
+      if(e.target.closest('button')) return; // ignore clicks on buttons
+      detTr.style.display = detTr.style.display === 'none' ? 'table-row' : 'none';
+      // scroll into view a bit for mobile
+      if(detTr.style.display !== 'none'){
+        detTr.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+    });
+  });
+}
+
+// helper to render details block
+function buildDetailsHtml(row, idx){
+  // left: details list ; right: resources & quick youtube search
+  // details are an array of lines; we convert to <ul>
+  const lines = Array.isArray(row.details) ? row.details : (row.details ? row.details.split('\n') : []);
+  const listHtml = lines.map(l => `<li>${escapeHtml(l)}</li>`).join('\n');
+  // resources list HTML
+  const resources = Array.isArray(row.resources) ? row.resources : [];
+  const resourcesHtml = resources.map(r => `<div class="links"><a href="${r.url}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.title)}</a></div>`).join('');
+  const ytQuery = encodeURIComponent(row.task + ' tutorial');
+  const youtubeSearch = `https://www.youtube.com/results?search_query=${ytQuery}`;
+  // final HTML
+  return `
+    <div class="details">
+      <div class="detail-grid">
+        <div>
+          <h4>What to learn (point-wise)</h4>
+          <ul style="margin-top:8px;line-height:1.5;color:#dbeaff">${listHtml}</ul>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <div style="margin-top:8px;color:#dbeaff">
+            <div style="margin-bottom:8px"><strong>Quick YouTube search:</strong><br>
+              <a href="${youtubeSearch}" target="_blank" rel="noopener noreferrer">${youtubeSearch}</a>
+            </div>
+            <div style="margin-bottom:6px"><strong>Key links:</strong></div>
+            ${resourcesHtml || '<div style="color:var(--muted)">No direct links provided.</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* -----------------------------
+  Utilities: escaping, status labels
+------------------------------*/
+function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function statusLabel(i){ return i===0 ? 'Not Started' : i===1 ? 'In Progress' : 'Completed'; }
+
+/* -----------------------------
+  Interactions: change status
+------------------------------*/
+tbody.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const idx = Number(btn.dataset.idx);
+  const action = btn.dataset.action;
+  if(action === 'next'){ state[idx].status = Math.min(2, state[idx].status + 1); persist(); render(); }
+  if(action === 'prev'){ state[idx].status = Math.max(0, state[idx].status - 1); persist(); render(); }
+  if(action === 'reset'){ state[idx].status = 0; persist(); render(); }
+});
+
+/* -----------------------------
+  Filters & search
+------------------------------*/
+phaseFilter.addEventListener('change', render);
+monthFilter.addEventListener('change', render);
+searchInput.addEventListener('input', render);
+clearBtn.addEventListener('click', ()=>{
+  searchInput.value=''; phaseFilter.value='all'; monthFilter.value='all'; render();
+});
+
+/* -----------------------------
+  Export / Import CSV
+------------------------------*/
+function toCSV(arr){
+  const header = ['year','month','phase','task','status','details','resources'];
+  const rows = arr.map(r => {
+    const details = Array.isArray(r.details) ? r.details.join('\\n') : (r.details || '');
+    const resources = Array.isArray(r.resources) ? r.resources.map(x=>`${x.title}||${x.url}`).join(';;') : '';
+    // CSV-safe quotes
+    return [r.year, r.month, `"${r.phase.replace(/"/g,'""')}"`, `"${r.task.replace(/"/g,'""')}"`, r.status, `"${details.replace(/"/g,'""')}"`, `"${resources.replace(/"/g,'""')}"`].join(',');
+  });
+  return header.join(',') + '\\n' + rows.join('\\n');
+}
+
+exportBtn.addEventListener('click', ()=>{
+  const csv = toCSV(state);
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ai_ml_roadmap_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+importBtn.addEventListener('click', ()=> importFile.click());
+importFile.addEventListener('change', (ev) => {
+  const f = ev.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const parsed = parseCSV(reader.result);
+    if(parsed && parsed.length){
+      // simple import: replace state
+      state = parsed;
+      persist();
+      render();
+      alert('Imported '+parsed.length+' rows. Make sure resources are correct.');
+    } else alert('Import failed or empty file.');
+  };
+  reader.readAsText(f);
+});
+
+// Basic CSV parser matching our export format (not fully general)
+function parseCSV(text){
+  const lines = text.split(/\\r?\\n/).filter(Boolean);
+  const header = lines.shift().split(',').map(h => h.trim().replace(/^"|"$/g,''));
+  const idx = {
+    year: header.indexOf('year'),
+    month: header.indexOf('month'),
+    phase: header.indexOf('phase'),
+    task: header.indexOf('task'),
+    status: header.indexOf('status'),
+    details: header.indexOf('details'),
+    resources: header.indexOf('resources')
+  };
+  const out = [];
+  lines.forEach(line => {
+    // naive split that handles quoted fields roughly
+    const parts = splitCsvLine(line);
+    const details = (parts[idx.details] || '').replace(/^"|"$/g,'').replace(/""/g,'"');
+    const resRaw = (parts[idx.resources] || '').replace(/^"|"$/g,'').replace(/""/g,'"');
+    const resources = resRaw ? resRaw.split(';;').map(x => {
+      const p = x.split('||'); return { title: p[0]||'link', url: p[1]||'#' };
+    }) : [];
+    out.push({
+      year: Number(parts[idx.year]),
+      month: Number(parts[idx.month]),
+      phase: (parts[idx.phase]||'').replace(/^"|"$/g,'').replace(/""/g,'"'),
+      task: (parts[idx.task]||'').replace(/^"|"$/g,'').replace(/""/g,'"'),
+      status: Number(parts[idx.status]||0),
+      details: details ? details.split('\\n') : [],
+      resources
+    });
+  });
+  return out;
+}
+function splitCsvLine(line){
+  // simple parser: split by comma except inside quotes
+  const res=[]; let cur=''; let inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='\"') { inQuotes = !inQuotes; cur+=ch; continue; }
+    if(ch===',' && !inQuotes){ res.push(cur); cur=''; continue; }
+    cur += ch;
+  }
+  if(cur!=='') res.push(cur);
+  return res;
+}
+
+/* -----------------------------
+  Reset all shortcut & safety
+------------------------------*/
+window.addEventListener('keydown', (e)=>{
+  if(e.shiftKey && e.key.toLowerCase()==='s'){
+    if(confirm('Reset ALL progress to Not Started?')){ state.forEach(s=> s.status=0); persist(); render(); }
+  }
+});
+
+/* -----------------------------
+  Utilities
+------------------------------*/
+function init(){
+  render();
+  // accessibility: focus search on load
+  searchInput.focus();
+}
+init();
+</script>
+</body>
+</html>
